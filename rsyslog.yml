@@ -1,0 +1,89 @@
+---
+
+    hosts: homologacao
+    
+    tasks:
+      - name: "arquivo mudanca 1 syslog.conf"
+        become: yes
+        become_user: root
+        tags: syslog_file
+        lineinfile:
+          path: /etc/audisp/plugins.d/syslog.conf
+          # The String to Search
+          regexp: "active = no" 
+          # The String to Replace
+          line: "active = yes"
+          state: present
+          backup: yes
+        
+        register: config1
+
+
+      - name: "arquivo mudanca 2 syslog.conf"
+        become: yes
+        become_user: root
+        tags: syslog_file
+        lineinfile:
+          path: /etc/audisp/plugins.d/syslog.conf
+          # The String to Search
+          regexp: "active = no" 
+          # The String to Replace
+          line: "active = yes"
+          state: present
+          backup: yes
+        
+        register: config2 
+        
+      - name: "Copy Logical IT file"
+        ansible.builtin.copy:
+        src: /home/gabriel.martins/SIEM/logicalit.rules
+        dest: /etc/audit/rules.d/
+        owner: root
+        group: root
+        mode: '0644'
+    
+    
+      - name: "mudanca 1 arquivo rsyslog"
+        become: yes
+        become_user: root
+        tags: rsyslog_file
+        lineinfile:
+          path: /etc/rsyslog.conf
+          # The String to Search
+          regexp: "*.info;mail.none;authpriv.none;cron.none; /var/log/messages" 
+          # The String to Replace
+          line: "*.info;mail.none;authpriv.none;cron.none;local0.none /var/log/messages"
+          state: present
+          backup: yes
+        
+        register: rsyslog1
+        
+      - name: "mudanca 2 arquivo rsyslog"
+        become: yes
+        become_user: root
+        tags: rsyslog_file
+        lineinfile:
+          insertafter: "# ### end of the forwarding rule ###" 
+          line: "local0.* @@10.27.61.177:514"
+          state: present
+          firstmatch: yes
+          backup: yes
+        
+        register: rsyslog2
+
+
+      - name: rsyslog restart
+ #hosts: all
+        become: true
+        tasks:
+        - name: rsyslog restart
+        ansible.builtin.service:
+         name: rsyslog
+         state: restarted
+        enabled: true
+        
+#  - name: Ensuse rsyslog is running
+#  service:
+#    name: rsyslog
+#    state: started
+#    enabled: yes
